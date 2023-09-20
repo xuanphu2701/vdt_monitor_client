@@ -1,0 +1,35 @@
+global:
+  scrape_interval: 5s
+  external_labels:
+    project: tenant2
+    user: user1
+    
+
+rule_files:
+  - /etc/prometheus/rules.yaml
+
+scrape_configs:
+  - job_name: demo/mimir
+    static_configs:
+      - targets: ["mimir-1:8080"]
+        labels:
+          pod: "mimir-1"
+  - job_name: prometheus 
+    static_configs:
+      - targets:
+          - "localhost:9090"
+  
+remote_write:
+  - url: http://authen-proxy:8082/api/v1/push
+    # X-Scope-OrgID: tenant2
+    authorization: 
+      credentials: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJYLVNjb3BlLU9yZ0lEIjoidGVuYW50MiJ9.4hTk8L7ioV2JyTgSkhiV1BDkXLX41_E7W0-qZzb2MlQ
+
+  
+
+
+
+
+
+
+

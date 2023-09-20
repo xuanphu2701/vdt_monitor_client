@@ -1,0 +1,169 @@
+version: "3.4"
+
+# networks: 
+#   mimir-net:
+#     driver: bridge
+#   authen-redis-net:
+#     driver: bridge
+#   prom-authen-mimir-net:
+#     driver: bridge
+#   grafana-mimir-net:
+#     driver: bridge
+
+volumes:
+  mimir-data:
+  mimir-2-data:
+  mimir-3-data:
+  minio-data:
+  redis-data:
+
+services:
+  minio:
+    image: minio/minio
+    container_name: my-minio-container
+    entrypoint: [""]
+    command: ["sh", "-c", "mkdir -p /data/mimir && minio server --quiet /data"]
+    environment:
+      - MINIO_ROOT_USER=mimir
+      - MINIO_ROOT_PASSWORD=supersecret
+    volumes:
+      - minio-data:/data
+    # networks:
+    #   - mimir-net
+
+  mimir:
+    image: grafana/mimir:latest
+    container_name: my-mimir-container
+    command: ["-config.file=/etc/mimir.yaml"]
+    hostname: mimir
+    depends_on:
+      - minio
+    volumes:
+      - ./config/mimir.yaml:/etc/mimir.yaml
+      - mimir-data:/data
+    ports:
+      - 8080:8080
+    # networks:
+    #   - mimir-net
+    #   - grafana-mimir-net
+    #   - prom-authen-mimir-net
+
+  grafana:
+    image: grafana/grafana:9.5.1
+    container_name: my-grafana-container
+    pull_policy: always
+    depends_on:
+      - mimir
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_USERS_DEFAULT_THEME=light
+      - GF_LOG_MODE=console
+      - GF_LOG_LEVEL=critical
+    volumes:
+      - ./config/grafana/provisioning/dashboards/grafana-provisioning-dashboards.yaml:/etc/grafana/provisioning/dashboards/provisioning-dashboards.yaml:ro
+      - ./config/grafana/provisioning/datasources/grafana-provisioning-datasources.yaml:/etc/grafana/provisioning/datasources/provisioning-datasources.yaml:ro
+    ports:
+      - 3000:3000
+    # networks:
+    #   - grafana-mimir-net
+
+  prometheus1:
+    image: prom/prometheus:latest
+    container_name: my-prom1-container
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --log.level=error
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+    # network_mode: host
+    volumes:
+      - ./config/prometheus1/prometheus.yaml:/etc/prometheus/prometheus.yml
+      - ./config/prometheus1/rules.yaml:/etc/prometheus/rules.yaml
+    depends_on:
+      - "mimir"
+    ports:
+      - 9090:9090
+    # networks:
+    #   - prom-authen-mimir-net
+
+  prometheus2:
+    image: prom/prometheus:latest
+    container_name: my-prom2-container
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --log.level=error
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+    # network_mode: host
+    volumes:
+      - ./config/prometheus2/prometheus.yaml:/etc/prometheus/prometheus.yml
+      - ./config/prometheus2/rules.yaml:/etc/prometheus/rules.yaml
+    depends_on:
+      - "mimir"
+    ports:
+      - 9091:9090
+    # networks:
+    #   - prom-authen-mimir-net
+  
+  redis:
+    image: redis:7.2.0
+    container_name: my-redis-container
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    # networks:
+    #   - authen-redis-net
+
+  authen-proxy:
+    build:
+      context: ./config/authen-proxy/
+    image: go-docker-bin:latest
+    container_name: my-authen-proxy-container
+    depends_on:
+      - redis
+      - mimir
+    ports:
+      - "9099:9099"
+      - "8081:8081"
+      - "8082:8082"
+    # networks:
+    #   - prom-authen-mimir-net
+    #   - authen-redis-net
+
+  
+  
+
+  mimir-2:
+    image: grafana/mimir:latest
+    container_name: my-mimir-2-container
+    command: ["-config.file=/etc/mimir.yaml"]
+    hostname: mimir-2
+    depends_on:
+      - minio
+    volumes:
+      - ./config/mimir.yaml:/etc/mimir.yaml
+      - mimir-2-data:/data
+    # networks:
+    #   - mimir-net
+    #   - grafana-mimir-net
+    #   - prom-authen-mimir-net
+
+  mimir-3:
+    image: grafana/mimir:latest
+    container_name: my-mimir-3-container
+    command: ["-config.file=/etc/mimir.yaml"]
+    hostname: mimir-3
+    depends_on:
+      - minio
+    volumes:
+      - ./config/mimir.yaml:/etc/mimir.yaml
+      - mimir-3-data:/data
+    # networks:
+    #   - mimir-net
+    #   - grafana-mimir-net
+    #   - prom-authen-mimir-net
+

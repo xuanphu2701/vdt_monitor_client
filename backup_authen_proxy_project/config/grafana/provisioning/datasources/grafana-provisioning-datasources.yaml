@@ -1,0 +1,42 @@
+apiVersion: 1
+
+datasources:
+  - name: Mimir tenant1
+    type: prometheus
+    access: proxy
+    orgId: 1
+    url: http://mimir-1:8080/prometheus
+    version: 1
+    editable: true
+    jsonData:
+      httpHeaderName1: "X-Scope-OrgID"
+      alertmanagerUid: "alertmanager"
+    secureJsonData:
+      httpHeaderValue1: "tenant1"
+    isDefault: true
+  - name: Mimir naruto
+    type: prometheus
+    access: proxy
+    orgId: 1
+    url: http://mimir-1:8080/prometheus
+    version: 1
+    editable: true
+    jsonData:
+      httpHeaderName1: "X-Scope-OrgID"
+      alertmanagerUid: "alertmanager"
+    secureJsonData:
+      httpHeaderValue1: "naruto"
+    isDefault: false
+  # - name: Mimir Alertmanager
+  #   uid: alertmanager
+  #   type: alertmanager
+  #   access: proxy
+  #   orgId: 1
+  #   url: http://load-balancer:9009/
+  #   version: 1
+  #   editable: true
+  #   jsonData:
+  #     httpHeaderName1: "X-Scope-OrgID"
+  #     implementation: "cortex"
+  #   secureJsonData:
+  #     httpHeaderValue1: "demo"
